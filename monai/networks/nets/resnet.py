@@ -287,13 +287,23 @@ class ResNet(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.constant_(torch.as_tensor(m.bias), 0)
 
-    def _downsample_basic_block(self, x: torch.Tensor, planes: int, stride: int, spatial_dims: int = 3) -> torch.Tensor:
-        out: torch.Tensor = get_pool_layer(("avg", {"kernel_size": 1, "stride": stride}), spatial_dims=spatial_dims)(x)
-        #print("_downsample_basic_block", tuple(x.size()), tuple(out.size()), "planes", planes)
-        zero_pads = torch.zeros_like(out)
-        #zero_pads = torch.zeros(out.size(0), planes - out.size(1), *out.shape[2:], dtype=out.dtype, device=out.device)
-        out = torch.cat([out, zero_pads], dim=1)
-        return out
+    def _downsample_basic_block(self,  planes: int, stride: int, spatial_dims: int = 3) :
+        
+        class DownsampleBlock(nn.Module):
+            def __init__(self, planes):
+                super().__init__()
+                self.planes = planes
+                self.pool = get_pool_layer(("avg", {"kernel_size": 1, "stride": stride}), spatial_dims=spatial_dims)
+            
+            def forward(self, downsample_input):
+                out: torch.Tensor = self.pool(downsample_input)
+                #print("_downsample_basic_block", tuple(x.size()), tuple(out.size()), "planes", planes)
+                zero_pads = torch.zeros_like(out)
+                #zero_pads = torch.zeros(out.size(0), planes - out.size(1), *out.shape[2:], dtype=out.dtype, device=out.device)
+                out = torch.cat([out, zero_pads], dim=1)
+                return out
+
+        return DownsampleBlock(planes)
 
     def _make_layer(
         self,
@@ -310,8 +320,7 @@ class ResNet(nn.Module):
         downsample: nn.Module | partial | None = None
         if stride != 1 or self.in_planes != planes * block.expansion:
             if look_up_option(shortcut_type, {"A", "B"}) == "A":
-                downsample = partial(
-                    self._downsample_basic_block,
+                downsample = self._downsample_basic_block(
                     planes=planes * block.expansion,
                     stride=stride,
                     spatial_dims=spatial_dims,
