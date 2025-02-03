@@ -292,7 +292,7 @@ class ResNet(nn.Module):
         #print("_downsample_basic_block", tuple(x.size()), tuple(out.size()), "planes", planes)
         zero_pads = torch.zeros_like(out)
         #zero_pads = torch.zeros(out.size(0), planes - out.size(1), *out.shape[2:], dtype=out.dtype, device=out.device)
-        out = torch.cat([out.data, zero_pads], dim=1)
+        out = torch.cat([out, zero_pads], dim=1)
         return out
 
     def _make_layer(
