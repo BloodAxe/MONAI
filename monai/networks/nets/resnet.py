@@ -289,8 +289,9 @@ class ResNet(nn.Module):
 
     def _downsample_basic_block(self, x: torch.Tensor, planes: int, stride: int, spatial_dims: int = 3) -> torch.Tensor:
         out: torch.Tensor = get_pool_layer(("avg", {"kernel_size": 1, "stride": stride}), spatial_dims=spatial_dims)(x)
-        zero_pads = torch.zeros_like(out[:, planes - out.size(1)])
-        #zero_pads = torch.zeros(out.size(0), planes - out.size(1), *out.shape[2:], dtype=out.dtype, device=out.device)
+        print("_downsample_basic_block", tuple(x.size()), tuple(out.size()), "planes", planes)
+        #zero_pads = torch.zeros_like(out[:, planes - out.size(1)])
+        zero_pads = torch.zeros(out.size(0), planes - out.size(1), *out.shape[2:], dtype=out.dtype, device=out.device)
         out = torch.cat([out.data, zero_pads], dim=1)
         return out
 
